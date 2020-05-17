@@ -25,36 +25,70 @@ class HMM():
 		# assert(method != "direct","direct caculate via exaustion is unfeasible!")
 		if method == "forward":
 			#loop caculation
-			stateProb = np.zeros(self.stateNum)
+			# forwardProb = np.zeros(self.stateNum)
 			# for t in range(len(obs)):
 			# 	print("t == ",t)
 			# 	for i,s in enumerate(self.stateSet):
 			# 		if t == 0:
-			# 			stateProb[i] = self.statePrior[s]*self.stateToObsMatrix[s][obs[t]]
-			# 			print("state == {}, stateProb == {}".format(s,stateProb[i]))
+			# 			forwardProb[i] = self.statePrior[s]*self.stateToObsMatrix[s][obs[t]]
+			# 			print("state == {}, forwardProb == {}".format(s,forwardProb[i]))
 			# 		else:
 			# 			sumProb = 0
 			# 			for s_ in stateSet:
-			# 				sumProb += stateProb[s_]*stateTransMatrix[s_][s]
+			# 				sumProb += forwardProb[s_]*stateTransMatrix[s_][s]
 			# 			print(sumProb,stateToObsMatrix[s][obs[t]])
-			# 			stateProb[i] = sumProb*self.stateToObsMatrix[s][obs[t]]
-			# 			print("state == {}, stateProb == {}".format(s,stateProb[s]))
+			# 			forwardProb[i] = sumProb*self.stateToObsMatrix[s][obs[t]]
+			# 			print("state == {}, forwardProb == {}".format(s,forwardProb[s]))
 			
 			#matrix caculation
-			stateProb = np.ones(self.stateNum)
+			forwardProb = np.ones(self.stateNum)
 			for t in range(len(obs)):
 				if t == 0:
-					stateProb *= self.statePrior*stateToObsMatrix[:][:,obs[t]]
+					forwardProb *= self.statePrior*stateToObsMatrix[:][:,obs[t]]
 					# for s in self.stateSet:
-					# 	print("state == {}, stateProb == {}".format(s,stateProb[s]))
+					# 	print("state == {}, forwardProb == {}".format(s,forwardProb[s]))
 				else:
-					stateProb = np.dot(stateProb,stateTransMatrix)
-					stateProb *= stateToObsMatrix[:][:,obs[t]]
+					forwardProb = np.dot(forwardProb,stateTransMatrix)
+					forwardProb *= stateToObsMatrix[:][:,obs[t]]
 					# for s in self.stateSet:
-					# 	print("state == {}, stateProb == {}".format(s,stateProb[s]))
+					# 	print("state == {}, forwardProb == {}".format(s,forwardProb[s]))
+			obsProb = sum(forwardProb)
 
-			obsProb = sum(stateProb)
-			return obsProb 
+		elif method == "backward":
+			backwardProb = np.ones(self.stateNum)
+			for t in range(len(obs)):
+				t = len(obs) - t -1
+				print("t == ",t)
+				backwardProb = stateToObsMatrix[:][:,obs[t]]*np.dot(stateTransMatrix,backwardProb)
+				for s in self.stateSet:
+					print("state == {}, backwardProb == {}".format(s,backwardProb[s]))
+			obsProb = sum(self.statePrior*backwardProb)
+
+		elif method == "forbackward":
+			timesplit = len(obs)//2
+			print("forward caculation!")
+			forwardProb = np.zeros(self.stateNum)
+			for t in range(timesplit):
+				print("t == ",t)
+				if t == 0:
+					forwardProb = self.statePrior*stateToObsMatrix[:][:,obs[t]]
+					for s in self.stateSet:
+						print("state == {}, forwardProb == {}".format(s,forwardProb[s]))
+				else:
+					forwardProb = np.dot(forwardProb,stateTransMatrix)
+					forwardProb *= stateToObsMatrix[:][:,obs[t]]
+					for s in self.stateSet:
+						print("state == {}, forwardProb == {}".format(s,forwardProb[s]))
+			print("backward caculation!")
+			backwardProb = np.ones(self.stateNum)
+			for t in range(timesplit,len(obs)):
+				t = len(obs) - t -1 + timesplit
+				print("t == ",t)
+				backwardProb = stateToObsMatrix[:][:,obs[t]]*np.dot(stateTransMatrix,backwardProb)
+				for s in self.stateSet:
+					print("state == {}, backwardProb == {}".format(s,backwardProb[s]))
+			obsProb = sum(np.dot(forwardProb,stateTransMatrix)*backwardProb)
+		return obsProb 
 
 		
 
@@ -77,5 +111,5 @@ if __name__ == '__main__':
 	H.stateToObsMatrix = stateToObsMatrix
 	H.lambda_=(stateTransMatrix,stateToObsMatrix,statePrior)
 	obs = [0,1,0]
-	obsProb = H.forward(H.lambda_,obs)
+	obsProb = H.forward(H.lambda_,obs,"forbackward")
 	print(obsProb)
