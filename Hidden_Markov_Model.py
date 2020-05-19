@@ -90,7 +90,63 @@ class HMM():
 			obsProb = sum(np.dot(forwardProb,stateTransMatrix)*backwardProb)
 		return obsProb 
 
-		
+	def predict(self,lambda_,obs,method ="approximate"):
+		state_list = list()
+		if method == "approximate":
+			stateProb_list = map(self.forbackward,[t for t in range(len(obs))])
+			state_list = map(self.decode,[stateProb for stateProb in stateProb_list])
+
+		elif method == "viterbe":
+			print("dynamic programming!")
+			# forwardProb = np.ones(self.stateNum)
+			# print("t == ",0)
+			forwardProb = self.statePrior*self.stateToObsMatrix[:][:,obs[0]]
+			for t in range(0,len(obs)):
+				print("t == ",t)
+				compete_matrix = ((forwardProb*self.stateTransMatrix.T).T)*self.stateToObsMatrix[:][:,obs[t]]
+				print(list(forwardProb))
+				mid_index = np.argmax(compete_matrix )
+				state = self.stateSet[mid_index//3]
+				forwardProb = compete_matrix[mid_index//3]
+				max_index = mid_index%3
+				deltaProb = forwardProb[max_index]
+				state_list.append(state)
+				print("max index:{} deltaProb:{}".format(max_index,deltaProb))
+
+
+
+		return state_list
+
+	def forbackward(self,timesplit):
+		# timesplit = len(obs)//2
+		print("forward caculation!")
+		forwardProb = np.zeros(self.stateNum)
+		for t in range(timesplit):
+			print("t == ",t)
+			if t == 0:
+				forwardProb = self.statePrior*self.stateToObsMatrix[:][:,obs[t]]
+				for s in self.stateSet:
+					print("state == {}, forwardProb == {}".format(s,forwardProb[s]))
+			else:
+				forwardProb = np.dot(forwardProb,self.stateTransMatrix)
+				forwardProb *= self.stateToObsMatrix[:][:,obs[t]]
+				for s in self.stateSet:
+					print("state == {}, forwardProb == {}".format(s,forwardProb[s]))
+		print("backward caculation!")
+		backwardProb = np.ones(self.stateNum)
+		for t in range(timesplit,len(obs)):
+			t = len(obs) - t -1 + timesplit
+			print("t == ",t)
+			backwardProb = self.stateToObsMatrix[:][:,obs[t]]*np.dot(self.stateTransMatrix,backwardProb)
+			for s in self.stateSet:
+				print("state == {}, backwardProb == {}".format(s,backwardProb[s]))
+		stateProb =np.dot(forwardProb,self.stateTransMatrix)*backwardProb
+		# obsProb = sum(np.dot(forwardProb,self.stateTransMatrix)*backwardProb)
+		return stateProb
+
+	def decode(self,stateProb):
+		stateProb /= sum(stateProb)
+		return self.stateSet[np.argmax(stateProb)]
 
 if __name__ == '__main__':
 	stateSet = np.array([0,1,2])
@@ -111,5 +167,7 @@ if __name__ == '__main__':
 	H.stateToObsMatrix = stateToObsMatrix
 	H.lambda_=(stateTransMatrix,stateToObsMatrix,statePrior)
 	obs = [0,1,0]
-	obsProb = H.forward(H.lambda_,obs,"forbackward")
-	print(obsProb)
+	# obsProb = H.forward(H.lambda_,obs,"forbackward")
+	# print(obsProb)
+	state = H.predict(H.lambda_,obs,"viterbe")
+	print(list(state))
