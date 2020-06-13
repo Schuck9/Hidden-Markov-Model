@@ -96,25 +96,52 @@ class HMM():
 			stateProb_list = map(self.forbackward,[t for t in range(len(obs))])
 			state_list = map(self.decode,[stateProb for stateProb in stateProb_list])
 
+		# elif method == "viterbe":
+		# 	print("dynamic programming!")
+		# 	# forwardProb = np.ones(self.stateNum)
+		# 	# print("t == ",0)
+		# 	forwardProb = self.statePrior*self.stateToObsMatrix[:][:,obs[0]]
+		# 	for t in range(0,len(obs)):
+		# 		print("t == ",t)
+		# 		compete_matrix = ((forwardProb*self.stateTransMatrix.T).T)*self.stateToObsMatrix[:][:,obs[t]]
+		# 		print(list(forwardProb))
+		# 		mid_index = np.argmax(compete_matrix )
+		# 		state = self.stateSet[mid_index//3]
+		# 		forwardProb = compete_matrix[mid_index//3]
+		# 		max_index = mid_index%3
+		# 		deltaProb = forwardProb[max_index]
+		# 		state_list.append(state)
+		# 		print("max index:{} deltaProb:{}".format(max_index,deltaProb))
+
 		elif method == "viterbe":
 			print("dynamic programming!")
 			# forwardProb = np.ones(self.stateNum)
 			# print("t == ",0)
-			forwardProb = self.statePrior*self.stateToObsMatrix[:][:,obs[0]]
-			for t in range(0,len(obs)):
-				print("t == ",t)
-				compete_matrix = ((forwardProb*self.stateTransMatrix.T).T)*self.stateToObsMatrix[:][:,obs[t]]
-				print(list(forwardProb))
-				mid_index = np.argmax(compete_matrix )
-				state = self.stateSet[mid_index//3]
-				forwardProb = compete_matrix[mid_index//3]
-				max_index = mid_index%3
-				deltaProb = forwardProb[max_index]
-				state_list.append(state)
-				print("max index:{} deltaProb:{}".format(max_index,deltaProb))
-
-
-
+			max_index = []
+			# forwardProb = self.statePrior*self.stateToObsMatrix[:][:,obs[0]]
+			# print("t == 0")
+			# print("forwardProb:{}".format(forwardProb))	
+			
+			for t in range(len(obs)):
+				if t == 0:
+					print("t == ",t)
+					forwardProb = self.statePrior*self.stateToObsMatrix[:][:,obs[0]]
+					print("forwardProb:{}".format(forwardProb))	
+				# print(self.stateToObsMatrix[:][:,obs[t]])
+				elif t > 0:
+					print("t == ",t)
+					compete_matrix = (forwardProb*(self.stateTransMatrix.T)).T*self.stateToObsMatrix[:][:,obs[t]]
+					# print(compete_matrix)
+					forwardProb = np.max(compete_matrix,axis=0)
+					max_index.append(np.argmax(compete_matrix,axis =0))
+					
+					print("forwardProb:{}".format(forwardProb))	
+			final_node = np.argmax(forwardProb)
+			# inv_T = np.arange(len(obs))[::-1]	
+			for nodes in max_index:
+				state_list.append(nodes[final_node])
+			state_list.append(final_node)
+			print("predicted state list :",state_list)
 		return state_list
 
 	def forbackward(self,timesplit):
